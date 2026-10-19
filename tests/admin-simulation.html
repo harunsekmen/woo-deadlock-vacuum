@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>WordPress Admin &rsaquo; Database Vacuum & Pruner</title>
+  <link rel="stylesheet" href="../assets/css/vacuum-admin.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+      background: #f0f0f1;
+      color: #3c434a;
+      display: flex;
+    }
+    #adminmenuwrap {
+      width: 160px;
+      background: #1d2327;
+      min-height: 100vh;
+      color: #f0f0f1;
+    }
+    .wp-menu-item {
+      padding: 10px 15px;
+      font-size: 13px;
+      color: #c3c4c7;
+      border-bottom: 1px solid #2c3338;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .wp-menu-item.active {
+      background: #7f54b3;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    #wpcontent {
+      flex: 1;
+      padding: 24px 32px;
+    }
+    .wp-heading-inline {
+      font-size: 23px;
+      font-weight: 400;
+      margin: 0 0 8px 0;
+      color: #1d2327;
+    }
+    .description {
+      color: #646970;
+      font-size: 13px;
+      margin-bottom: 24px;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+    .postbox {
+      background: #ffffff;
+      border: 1px solid #c3c4c7;
+      border-radius: 4px;
+      padding: 24px;
+      box-shadow: 0 1px 1px rgba(0,0,0,.04);
+    }
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .metric-card {
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid;
+    }
+    .metric-val {
+      font-size: 28px;
+      font-weight: 700;
+      display: block;
+      line-height: 1.1;
+    }
+    .metric-lbl {
+      font-size: 12px;
+      color: #4b5563;
+      margin-top: 6px;
+      display: block;
+    }
+    table.widefat {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      border: 1px solid #c3c4c7;
+    }
+    table.widefat th {
+      background: #f6f7f7;
+      text-align: left;
+      padding: 10px 12px;
+      border-bottom: 1px solid #c3c4c7;
+      font-weight: 600;
+    }
+    table.widefat td {
+      padding: 12px;
+      border-bottom: 1px solid #f0f0f1;
+    }
+    .button-primary {
+      background: #0ea5e9;
+      color: #ffffff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    window.wdvData = {
+      ajaxUrl: '/wp-admin/admin-ajax.php',
+      nonce: 'demo_nonce_123',
+      i18n: {
+        purging: 'Executing indexed micro-chunk (500 rows)...',
+        success: 'Batch completed: 500 stale transients purged safely in 11ms.'
+      }
+    };
+  </script>
+  <script src="../assets/js/vacuum-admin.js"></script>
+</head>
+<body>
+  <div id="adminmenuwrap">
+    <div style="padding: 16px; font-weight: bold; color: #fff; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+      <span style="background: #2271b1; padding: 2px 6px; border-radius: 3px;">WP</span> Dashboard
+    </div>
+    <div class="wp-menu-item">📦 WooCommerce</div>
+    <div class="wp-menu-item">🛍️ Orders (HPOS)</div>
+    <div class="wp-menu-item active">🧹 DB Vacuum</div>
+    <div class="wp-menu-item">⚙️ Settings</div>
+    <div class="wp-menu-item">📊 Status &amp; Logs</div>
+  </div>
+
+  <div id="wpcontent">
+    <h1 class="wp-heading-inline">WooCommerce Deadlock-Free Database Vacuum &amp; Pruner</h1>
+    <div class="description">
+      Zero-downtime database housekeeping. Cleans expired WooCommerce transients and orphan order item metadata using chunked micro-transactions without table locks.
+    </div>
+
+    <div class="grid-container">
+      <div class="postbox">
+        <h2 style="margin-top: 0; font-size: 16px;">Database Health &amp; Vacuum Telemetry</h2>
+        
+        <div class="metrics-row">
+          <div class="metric-card" style="background: #f0fdf4; border-color: #bbf7d0; border-left: 4px solid #16a34a;">
+            <span class="metric-val wdv-total-purged" style="color: #16a34a;">128,450</span>
+            <span class="metric-lbl">Total Rows Safely Purged</span>
+          </div>
+          <div class="metric-card" style="background: #eff6ff; border-color: #bfdbfe; border-left: 4px solid #2563eb;">
+            <span class="metric-val" style="color: #2563eb;">2,140</span>
+            <span class="metric-lbl">Stale Transients Pending</span>
+          </div>
+          <div class="metric-card" style="background: #faf5ff; border-color: #e9d5ff; border-left: 4px solid #9333ea;">
+            <span class="metric-val" style="color: #9333ea;">500</span>
+            <span class="metric-lbl">Chunk Size (Row Lock Safe)</span>
+          </div>
+        </div>
+
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin-bottom: 24px;">
+          <h3 style="margin-top: 0; font-size: 14px;">Manual Non-Blocking Vacuum Trigger</h3>
+          <p style="font-size: 13px; color: #475569; margin-bottom: 16px;">
+            Trigger an on-demand micro-batch vacuum. Operates strictly within single chunk constraints with 50ms pauses, ensuring customer checkouts never experience MySQL deadlock exceptions.
+          </p>
+          <div style="display: flex; align-items: center; gap: 14px;">
+            <button type="button" class="button-primary" id="wdv-run-btn">
+              ⚡ Run Vacuum Chunk Now
+            </button>
+            <span class="wdv-status-feedback" style="font-size: 13px; font-weight: 600; color: #16a34a;">
+              Batch completed: 500 stale transients purged safely in 11ms.
+            </span>
+          </div>
+        </div>
+
+        <h3 style="font-size: 14px;">Deadlock Prevention Strategy</h3>
+        <table class="widefat">
+          <thead>
+            <tr>
+              <th>Mechanism</th>
+              <th>Standard Cleaning Plugins</th>
+              <th>WooCommerce Deadlock Vacuum</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Query Execution</strong></td>
+              <td style="color: #dc2626;"><code>DELETE FROM wp_options WHERE ...</code> (Locks entire table)</td>
+              <td style="color: #16a34a;"><strong>Indexed Primary Key Chunking</strong> (Row-level only)</td>
+            </tr>
+            <tr>
+              <td><strong>Checkout Interruption Risk</strong></td>
+              <td style="color: #dc2626;">High (Deadlock 1213 on concurrent orders)</td>
+              <td style="color: #16a34a;"><strong>Zero</strong> (50ms sleep between micro-batches)</td>
+            </tr>
+            <tr>
+              <td><strong>Scheduler Architecture</strong></td>
+              <td>Synchronous HTTP timeout risk</td>
+              <td>Asynchronous WooCommerce Action Scheduler</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="postbox">
+        <h2 style="margin-top: 0; font-size: 16px;">Vacuum Parameters</h2>
+        <form>
+          <label style="display: block; font-weight: 600; font-size: 13px; margin-bottom: 6px;">
+            Batch Chunk Limit:
+          </label>
+          <input type="number" value="500" style="width: 100%; box-sizing: border-box; padding: 6px 10px; margin-bottom: 6px;">
+          <span style="display: block; font-size: 12px; color: #646970; margin-bottom: 16px;">
+            Recommended: 500 rows. Keeps MySQL lock acquisition times under 12ms per execution.
+          </span>
+
+          <label style="display: block; margin-bottom: 16px; font-size: 13px;">
+            <input type="checkbox" checked>
+            <strong>Action Scheduler Automation</strong>
+            <span style="display: block; font-size: 12px; color: #646970; margin-top: 4px;">
+              Automatically cleans orphans every 6 hours during non-peak server times.
+            </span>
+          </label>
+
+          <button type="button" style="background: #2271b1; color: #fff; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer;">
+            Save Vacuum Settings
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

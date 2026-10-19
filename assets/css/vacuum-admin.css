@@ -1,0 +1,25 @@
+/**
+ * WooCommerce Deadlock-Free Database Vacuum Admin CSS
+ */
+
+.wdv-admin-wrap {
+  font-family: inherit;
+}
+
+.wdv-run-now-btn {
+  background: #0ea5e9 !important;
+  border-color: #0284c7 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  transition: all 0.2s ease !important;
+}
+
+.wdv-run-now-btn:hover {
+  background: #0284c7 !important;
+}
+
+.updating-message {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
