@@ -1,119 +1,77 @@
-# WooCommerce Deadlock-Free Database Vacuum & Pruner
+# 🗄️ WooCommerce Deadlock-Free Database Vacuum
 
-[![WooCommerce HPOS Compatible](https://img.shields.io/badge/WooCommerce-HPOS%20Ready-7f54b3.svg)](https://github.com/harunsekmen/woo-deadlock-vacuum)
+[![WooCommerce HPOS Ready](https://img.shields.io/badge/WooCommerce-HPOS%20Ready-7f54b3.svg)](https://github.com/harunsekmen/woo-deadlock-vacuum)
 [![License: GPL-3.0](https://img.shields.io/badge/License-GPL%203.0-blue.svg)](https://github.com/harunsekmen/woo-deadlock-vacuum/blob/main/LICENSE)
 [![PHP: 8.1+](https://img.shields.io/badge/PHP-8.1%20to%208.3-8892be.svg)](https://github.com/harunsekmen/woo-deadlock-vacuum)
-[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)](https://github.com/harunsekmen/woo-deadlock-vacuum/actions)
 
-> Enterprise-grade, non-blocking WooCommerce database vacuum and transient pruner. Purges millions of expired transients and orphaned order items safely using chunked batch transactions.
+> A safe, non-blocking background cleanup tool that purges expired transients and orphaned store data in small batches without locking database tables or interrupting active shoppers.
 
-Developed and maintained by **[Harun Sekmen](https://github.com/harunsekmen)**.
+Developed and maintained by **[Harun Sekmen](https://github.com/harunsekmen)** — E-Commerce Systems Engineer & WooCommerce Developer.
 
----
-
-## ⚡ The Problem It Solves
-
-High-volume WooCommerce stores (stores processing thousands of orders or running frequent price/inventory syncs) accumulate millions of expired rows in `wp_options` (stale transients, customer session fragments) and `wp_woocommerce_order_itemmeta` (orphaned order items).
-
-When site owners attempt to clean these tables using traditional maintenance plugins (WP-Optimize, WP-Sweep, Advanced Database Cleaner):
-1. **Full Table Lock Escalation**: Traditional cleaners issue monolithic queries such as `DELETE FROM wp_options WHERE option_name LIKE '_transient_%'`. InnoDB escalates row locks to an exclusive metadata/table lock.
-2. **Deadlock 1213 on Active Checkouts**: While the database table is locked, concurrent buyers attempting to complete purchases hit `Error 1213: Deadlock found when trying to get lock; try restarting transaction`. Checkouts crash and revenue is lost.
-3. **HTTP 504 Gateway Timeouts**: Synchronous cleanup jobs exceed PHP execution time limits, leaving operations half-committed.
-
-**WooCommerce Deadlock-Free Database Vacuum** resolves this by executing deletions through an **indexed primary key chunking strategy** (default: 500 rows per micro-batch) managed asynchronously via **WooCommerce Action Scheduler**. Each batch is throttled with a mandatory 50ms pause, allowing active checkout queries to acquire immediate lock priority.
+[✉️ Discuss Database Optimization](mailto:sekmenwp@gmail.com) · [💼 Upwork Profile](https://www.upwork.com/freelancers/~01a7a8b58043e6e6d9) · [🔗 Main GitHub Profile](https://github.com/harunsekmen)
 
 ---
 
 ## 📸 Visual Previews & Operational Interface
 
-### WordPress Admin Vacuum & Deadlock Prevention Dashboard
-Store administrators can track safely purged rows, monitor pending expired transients, adjust micro-chunk thresholds, or trigger on-demand non-blocking maintenance:
+### WordPress Admin Vacuum & Maintenance Dashboard
+Store administrators can view the count of safely cleaned rows, monitor pending expired transients, adjust batch chunk sizes, or trigger on-demand maintenance:
 
 ![WooCommerce DB Vacuum Dashboard](docs/assets/admin-vacuum-dashboard.png)
 
 ---
 
+## ⚡ The Problem It Solves
+
+As a WooCommerce store grows and handles thousands of orders or frequent inventory updates, it accumulates massive amounts of temporary data:
+- **Expired Transients:** Stale session fragments, cached calculations, and expired API tokens cluttering the `wp_options` table.
+- **Orphaned Item Records:** Lingering data rows left behind in order item and metadata tables after past order modifications.
+- **The Table Lock Trap:** When store owners run standard database cleanup plugins on a busy store, those tools often execute a single massive deletion query (e.g., `DELETE FROM wp_options WHERE...`). This can lock the entire database table for several seconds. If a customer attempts to place an order at that exact moment, their checkout crashes with a database lock error.
+
+**WooCommerce Deadlock-Free Database Vacuum** solves this by cleaning records in **small, indexed batches** (default: 500 rows at a time) managed quietly in the background via **WooCommerce Action Scheduler**. It introduces a brief pause between batches so active customer checkouts always maintain top database priority.
+
+---
+
 ## 🛠️ Key Architectural Features
 
-- **Chunked Primary Key Deletions**: Never runs unindexed `LIKE` queries in `DELETE` statements. Targets primary keys via indexed `LIMIT` subqueries.
-- **Micro-Batch Throttling (50ms Pause)**: Introduces a non-blocking pause between deletions to allow live checkout and cart transactions to commit with zero contention.
-- **Asynchronous Action Scheduler Automation**: Schedules recurring background runs every 6 hours during non-peak server times.
-- **Full HPOS Compatibility**: Built with native support for WooCommerce High-Performance Order Storage (`custom_order_tables`) and Cart/Checkout Blocks.
-- **WP-CLI Ready**: Architecture designed for headless automation and developer operations.
+- **Chunked Batch Deletions:** Deletes records in manageable micro-batches using indexed primary key lookups instead of locking entire tables.
+- **Paced Micro-Pauses:** Includes a brief pause between chunks to ensure live customer checkouts and cart updates never compete for table locks.
+- **Asynchronous Background Runs:** Automatically schedules periodic maintenance through Action Scheduler during off-peak hours.
+- **High-Performance Order Storage (HPOS) Ready:** Built with native support for WooCommerce custom order tables and modern schemas.
+- **Clear Admin Visibility:** See exactly how many expired records were safely cleared without needing manual phpMyAdmin intervention.
 
 ---
 
-## 📊 Deadlock Prevention Comparison
+## 💼 Database Optimization & Store Maintenance
 
-| Capability / Behavior | Standard Cleaning Plugins | WooCommerce Deadlock Vacuum |
-| :--- | :--- | :--- |
-| **SQL Strategy** | Monolithic `DELETE FROM wp_options` | **Indexed Primary Key Chunking** |
-| **Database Lock Level** | Table-level lock escalation | **Row-level only (< 12ms per batch)** |
-| **Concurrent Checkout Safety** | High risk of MySQL Deadlock 1213 | **Zero risk** (Throttled micro-transactions) |
-| **Scheduler Engine** | Synchronous HTTP execution | Asynchronous **Action Scheduler** queue |
+Managing an established WooCommerce store with a large database or slow backend queries?
 
----
+- **Database Health Audits:** Identify bloated tables, missing indexes, and un-optimized query patterns.
+- **HPOS Migration & Cleanups:** Safe migration from legacy `wp_posts` tables to High-Performance Order Storage tables.
+- **Scheduled Automated Maintenance:** Non-blocking background routines to keep transient and session bloat under control.
+- **Performance Tuning:** MySQL/MariaDB query optimization and object cache configuration (Redis/Memcached).
 
-## 🏗️ Repository Structure
-
-```
-woo-deadlock-vacuum/
-├── .github/
-│   └── workflows/
-│       └── ci.yml               <-- GitHub Actions syntax and linting checks
-├── assets/
-│   ├── css/
-│   │   └── vacuum-admin.css     <-- WP Admin dashboard styling
-│   └── js/
-│       └── vacuum-admin.js      <-- Non-blocking batch trigger listener
-├── docs/
-│   └── assets/                  <-- High-resolution architecture & UI previews
-├── includes/
-│   ├── class-admin.php          <-- WP Admin dashboard & settings controller
-│   ├── class-plugin.php         <-- Singleton bootstrap & dependency checks
-│   ├── class-scheduler.php      <-- Action Scheduler cron manager
-│   └── class-vacuum-engine.php  <-- Chunked deletion & lock throttle engine
-├── templates/
-│   └── admin-dashboard.php      <-- Telemetry UI table & settings form
-├── tests/
-│   ├── run-e2e-test.js          <-- Headless Chromium E2E verification suite
-│   └── admin-simulation.html    <-- Admin dashboard mock
-├── composer.json                <-- PSR-4 autoload mapping
-├── LICENSE                      <-- GPL-3.0 License
-├── README.md                    <-- Technical documentation with benchmarks
-└── woo-deadlock-vacuum.php       <-- Main plugin entry point & metadata
-```
+📩 **Get in touch:** Contact me at **[sekmenwp@gmail.com](mailto:sekmenwp@gmail.com)** or connect on **[Upwork](https://www.upwork.com/freelancers/~01a7a8b58043e6e6d9)**.
 
 ---
 
-## 🧪 Automated Testing & Verification
+## 🚀 Developer Setup & Local Testing
 
-The repository includes an end-to-end headless browser test suite verifying non-blocking batch execution and dashboard telemetry:
+1. **Clone into plugins directory:**
+   ```bash
+   git clone https://github.com/harunsekmen/woo-deadlock-vacuum.git wp-content/plugins/woo-deadlock-vacuum
+   ```
 
-```bash
-# Run Playwright E2E simulation suite
-node tests/run-e2e-test.js
-```
+2. **Activate via WP-CLI:**
+   ```bash
+   wp plugin activate woo-deadlock-vacuum
+   ```
 
----
-
-## 🚀 Installation & Quick Start
-
-### Option 1: Git Clone (Development)
-Clone directly into your WordPress plugins directory:
-```bash
-cd wp-content/plugins/
-git clone https://github.com/harunsekmen/woo-deadlock-vacuum.git
-```
-
-### Option 2: WP-CLI Activation
-```bash
-wp plugin activate woo-deadlock-vacuum
-```
+3. **Review maintenance status:** Open **WooCommerce > DB Vacuum** in WordPress Admin to review pending transients and trigger a test cleanup.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the terms of the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**.
+This open-source project is licensed under the **[GNU General Public License v3.0](LICENSE)**.
 
