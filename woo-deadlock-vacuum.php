@@ -23,22 +23,9 @@ namespace WooDeadlockVacuum;
 defined('ABSPATH') || exit;
 
 // Autoloader for internal classes
-spl_autoload_register(static function (string $class): void {
-    $prefix = 'WooDeadlockVacuum\\';
-    $base_dir = __DIR__ . '/includes/';
-
-    $len = strlen($prefix);
-    if (strncmp($prefix, $class, $len) !== 0) {
-        return;
-    }
-
-    $relative_class = substr($class, $len);
-    $file = $base_dir . 'class-' . strtolower(str_replace(['\\', '_'], ['/', '-'], $relative_class)) . '.php';
-
-    if (file_exists($file)) {
-        require_once $file;
-    }
-});
+foreach (glob(__DIR__ . '/includes/*.php') as $inc) {
+    require_once $inc;
+}
 
 // Declare WooCommerce High-Performance Order Storage (HPOS) & Blocks compatibility
 add_action('before_woocommerce_init', static function (): void {
